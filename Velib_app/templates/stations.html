@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Liste des stations{% endblock %}
+{% block content %}
+<h1>Liste des stations Vélib'</h1>
+
+<form method="get" action="/stations" style="margin-bottom:15px;">
+    <input type="text" name="q" placeholder="Rechercher une station..." value="{{ query }}">
+    <label for="arr">Arrondissement :</label>
+    <select name="arr" id="arr" onchange="this.form.submit()">
+        <option value="Tous">Tous</option>
+        {% for a in arrondissements %}
+            <option value="{{ a }}" {% if a == arrondissement %}selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="limit">Afficher :</label>
+    <select name="limit" id="limit" onchange="this.form.submit()">
+        {% for opt in [50, 100, 200, 500, 1000] %}
+            <option value="{{ opt }}" {% if opt == limit %}selected{% endif %}>{{ opt }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Rechercher</button>
+</form>
+
+<table>
+    <thead>
+        <tr>
+            <th>Nom station</th>
+            <th>Arrondissement</th>
+            <th>Vélos dispo</th>
+            <th>Bornes dispo</th>
+            <th>Mécaniques</th>
+            <th>Électriques</th>
+            <th>État</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in records %}
+        <tr>
+            <td>{{ r.name }}</td>
+            <td>{{ r.nom_arrondissement_communes }}</td>
+            <td>{{ r.numbikesavailable }}</td>
+            <td>{{ r.numdocksavailable }}</td>
+            <td>{{ r.mechanical }}</td>
+            <td>{{ r.ebike }}</td>
+            <td>{{ r.station_state }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

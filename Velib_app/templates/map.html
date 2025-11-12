@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Carte des stations Vélib'{% endblock %}
+{% block content %}
+<h1 class="page-title">Carte des stations Vélib'</h1>
+
+<!-- Sélecteur du nombre et de l’arrondissement -->
+<form method="get" action="/map" style="margin-bottom:10px;">
+    <label for="limit">Afficher :</label>
+    <select name="limit" id="limit">
+        {% for opt in [50,100,200,500,1000] %}
+            <option value="{{ opt }}" {% if opt == limit %}selected{% endif %}>{{ opt }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="arr" style="margin-left:15px;">Arrondissement :</label>
+    <select name="arr" id="arr">
+        <option value="Tous">Tous</option>
+        {% for a in arrondissements %}
+            <option value="{{ a }}" {% if a == arrondissement %}selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit" style="margin-left:10px;">Filtrer</button>
+</form>
+
+<!-- ✅ Case à cocher pour la surcouche ZFE -->
+<div style="margin-bottom:10px;">
+    <label>
+        <input type="checkbox" id="toggle-zfe" />
+        Afficher les zones ZFE (Zone à Faibles Émissions)
+    </label>
+</div>
+
+<div id="map-container">
+    <!-- Panneau latéral -->
+    <div id="sidebar">
+        <input id="search" type="text" placeholder="Rechercher une station..." />
+        <p id="station-count"><strong>Stations affichées :</strong> 0</p>
+        <ul id="results"></ul>
+        <div id="summary">
+            <h3>Indicateurs</h3>
+            <p><strong>Total stations :</strong> <span id="total-stations">0</span></p>
+            <p><strong>Total vélos disponibles :</strong> <span id="total-bikes">0</span></p>
+            <p><strong>Total bornes libres :</strong> <span id="total-docks">0</span></p>
+        </div>
+    </div>
+
+    <!-- Carte -->
+    <div id="map"></div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Données Flask -->
+<script id="stations-data" type="application/json">
+    {{ records | tojson }}
+</script>
+
+<script>
+// === Données JSON envoyées par Flask ===
+const stations = JSON.parse(document.getElementById("stations-data").textContent);
+
+// === Initialisation de la carte ===
+const map = L.map('map').setView([48.8566, 2.3522], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+}).addTo(map);
+
+// === Fonction pour extraire les coordonnées ===
+function getCoords(s) {
+    const c = s.coordonnees_geo;
+    if (!c) return null;
+    if (Array.isArray(c) && c.length === 2) return [c[0], c[1]];
+    if (typeof c === 'object' && c.lat && c.lon) return [c.lat, c.lon];
+    if (typeof c === 'object' && c.latitude && c.longitude) return [c.latitude, c.longitude];
+    return null;
+}
+
+// === Marqueurs Vélib ===
+const markers = [];
+stations.forEach(s => {
+    const coords = getCoords(s);
+    if (!coords) return;
+    const marker = L.marker(coords).addTo(map);
+    marker.bindPopup(`
+        <b>${s.name || "Station"}</b><br>
+        🚲 Vélos : ${s.numbikesavailable ?? "?"}<br>
+        🔌 Bornes : ${s.numdocksavailable ?? "?"}<br>
+        📍 ${s.nom_arrondissement_communes || "?"}
+    `);
+    markers.push({ station: s, marker });
+});
+
+// === Recherche + indicateurs ===
+const searchInput = document.getElementById("search");
+const resultsList = document.getElementById("results");
+const countLabel = document.getElementById("station-count");
+const totalStations = document.getElementById("total-stations");
+const totalBikes = document.getElementById("total-bikes");
+const totalDocks = document.getElementById("total-docks");
+
+function updateResults(list) {
+    resultsList.innerHTML = "";
+    countLabel.innerHTML = `<strong>Stations affichées :</strong> ${list.length}`;
+    let bikes = 0, docks = 0;
+
+    list.forEach(s => {
+        bikes += Number(s.numbikesavailable) || 0;
+        docks += Number(s.numdocksavailable) || 0;
+    });
+
+    totalStations.textContent = list.length;
+    totalBikes.textContent = bikes;
+    totalDocks.textContent = docks;
+
+    list.slice(0, 50).forEach(s => {
+        const li = document.createElement("li");
+        li.textContent = s.name || "Station";
+        li.onclick = () => {
+            const coords = getCoords(s);
+            if (coords) {
+                map.setView(coords, 16);
+                const found = markers.find(m => m.station === s);
+                if (found) found.marker.openPopup();
+            }
+        };
+        resultsList.appendChild(li);
+    });
+}
+
+searchInput.addEventListener("input", () => {
+    const q = searchInput.value.toLowerCase().trim();
+    const filtered = q
+        ? stations.filter(s => s.name && s.name.toLowerCase().includes(q))
+        : stations;
+    updateResults(filtered);
+});
+
+updateResults(stations);
+
+// === SURCOUCHE ZFE (affichable via case à cocher) ===
+let zfeLayer = null;
+
+async function loadZFEOverlay() {
+  const res = await fetch("/api/zfe");
+  const geojson = await res.json();
+
+  zfeLayer = L.geoJSON(geojson, {
+    style: feature => ({
+      color: "#e74c3c",
+      weight: 2,
+      fillOpacity: 0.2
+    }),
+    onEachFeature: (feature, layer) => {
+      const p = feature.properties;
+      layer.bindPopup(`
+        <b>Zone :</b> ${p.id || "Inconnue"}<br>
+        <b>Crit'Air autorisé :</b> ${p.vp_critair || p.vul_critair || "N/A"}<br>
+        <b>Horaires :</b> ${p.vp_horaires || "Non précisé"}<br>
+        <a href="${p.url_site_information || '#'}" target="_blank">Lien officiel</a>
+      `);
+    }
+  });
+}
+
+// === Gestion de la case à cocher ===
+const zfeCheckbox = document.getElementById("toggle-zfe");
+
+zfeCheckbox.addEventListener("change", async (e) => {
+  if (e.target.checked) {
+    if (!zfeLayer) await loadZFEOverlay();
+    map.addLayer(zfeLayer);
+  } else if (zfeLayer) {
+    map.removeLayer(zfeLayer);
+  }
+});
+</script>
+{% endblock %}

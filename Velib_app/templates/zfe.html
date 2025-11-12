@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Historique des Zones à Faibles Émissions{% endblock %}
+
+{% block content %}
+<h1>Historique des Zones à Faibles Émissions (ZFE)</h1>
+
+<p>
+    <a href="/" style="text-decoration:none;">⬅ Retour à l'accueil</a>
+</p>
+
+<table border="1" cellpadding="6" cellspacing="0" style="width:100%; border-collapse:collapse;">
+    <thead style="background-color:#4CAF50; color:white;">
+        <tr>
+            <th>ID</th>
+            <th>Crit'Air VP</th>
+            <th>Horaires VP</th>
+            <th>Date début</th>
+            <th>Date fin</th>
+            <th>Site d'information</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for z in records %}
+        <tr>
+            <td>{{ z.id or "N/A" }}</td>
+            <td>{{ z.vp_critair or "?" }}</td>
+            <td>{{ z.vp_horaires or "Non précisé" }}</td>
+            <td>{{ z.date_debut or "?" }}</td>
+            <td>{{ z.date_fin or "En cours" }}</td>
+            <td>
+                {% if z.url_site_information %}
+                    <a href="{{ z.url_site_information }}" target="_blank">Consulter</a>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if not records %}
+<p>Aucune donnée ZFE trouvée dans la base MongoDB.</p>
+{% endif %}
+{% endblock %}

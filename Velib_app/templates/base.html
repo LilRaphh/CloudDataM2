@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Vélib Data{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/727/727606.png" type="image/png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+    <!-- === HEADER GLOBAL === -->
+    <header class="navbar">
+        <div class="nav-left">
+            <a href="/" class="brand">
+                🚲 <span>Vélib Data</span>
+            </a>
+        </div>
+        <nav class="nav-links">
+            <a href="/">Accueil</a>
+            <a href="/map">Carte</a>
+            <a href="/stations">Stations</a>
+            <!-- ✅ Nouveau lien vers la page ZFE -->
+            <a href="/zfe">ZFE</a>
+        </nav>
+    </header>
+
+    <main class="page-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>© {{ 2025 }} Vélib Data – Données issues de 
+            <a href="https://opendata.paris.fr" target="_blank">opendata.paris.fr</a>
+        </p>
+    </footer>
+
+</body>
+</html>
