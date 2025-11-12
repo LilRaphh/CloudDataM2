@@ -1,69 +1,60 @@
-# ☁️ CloudDataM2
+# 🚲 Vélib Data -- CloudDataM2
 
-Projet de Master 2 Big Data & IA -- Architecture distribuée et pipeline
-de données Cloud.
-
-------------------------------------------------------------------------
-
-## 🚀 Objectif du projet
-
-Développer une plateforme de **collecte, stockage, traitement et
-visualisation** de données en environnement cloud et conteneurisé
-(Docker), intégrant des services de data engineering, data analytics et
-machine learning.
+Application web de visualisation et d'analyse des données **Vélib'** à
+Paris, avec intégration des **zones ZFE** et d'un **historique de
+relevés** stocké dans MongoDB.\
+Développé en **Flask** et conteneurisé avec **Docker Compose**.
 
 ------------------------------------------------------------------------
 
-## 🧱 Architecture technique
+## 🌍 Objectif
 
-  -----------------------------------------------------------------------
-  Composant                          Description
-  ---------------------------------- ------------------------------------
-  **PostgreSQL / PostGIS**           Base de données relationnelle et
-                                     géospatiale pour le stockage
-                                     structuré
-
-  **Apache NiFi**                    Ingestion et orchestration des flux
-                                     de données
-
-  **Kafka**                          Gestion des événements et streaming
-                                     temps réel
-
-  **Cassandra**                      Stockage NoSQL distribué
-
-  **Spark**                          Traitement distribué et analytique
-
-  **FastAPI**                        Exposition des APIs de données et
-                                     modèles
-
-  **Streamlit**                      Interface de visualisation
-
-  **Docker Compose**                 Orchestration et déploiement
-                                     multi-conteneurs
-  -----------------------------------------------------------------------
+L'application permet de : - Visualiser en temps réel les **stations
+Vélib'** sur une carte interactive. - Afficher les **zones à faibles
+émissions (ZFE)** en overlay. - Consulter les **données historiques**
+des stations grâce à MongoDB. - Mettre à jour et historiser les relevés
+sans écraser les précédents. - Fournir une base pour l'analyse de la
+mobilité urbaine.
 
 ------------------------------------------------------------------------
 
-## 🧩 Structure du projet
+## 🧠 Stack technique
+
+  Composant              Description
+  ---------------------- --------------------------------------------------------
+  **Flask**              Framework web Python servant l'API et les pages HTML
+  **MongoDB**            Base NoSQL pour stocker les relevés Vélib (historique)
+  **Leaflet.js**         Librairie JavaScript pour la carte interactive
+  **Docker Compose**     Orchestration du backend Flask + MongoDB
+  **HTML / CSS / JS**    Interface utilisateur et carte interactive
+  **Open Data Vélib'**   Source de données en temps réel
+
+------------------------------------------------------------------------
+
+## 🗂️ Structure du projet
 
     CloudDataM2/
     │
-    ├── docker-compose.yml          # Stack complète (NiFi, Postgres, Spark, etc.)
+    ├── app.py                     # Point d’entrée Flask
     ├── requirements.txt            # Dépendances Python
-    ├── src/                        # Code source principal
-    │   ├── api/                    # Endpoints FastAPI
-    │   ├── connectors/             # Connexions (Postgres, Kafka, etc.)
-    │   ├── notebooks/              # Analyses exploratoires
-    │   ├── visualization/          # Dashboards Streamlit
-    │   └── tests/                  # Tests unitaires
+    ├── docker-compose.yml          # Stack Flask + MongoDB
     │
-    ├── data/                       # Données brutes et traitées
-    ├── README.md                   # Documentation principale
-    └── .env                        # Variables d'environnement
+    ├── templates/                  # Pages HTML (Jinja2)
+    │   ├── base.html
+    │   ├── index.html
+    │   ├── map.html
+    │   └── zfe.html
+    │
+    ├── static/                     # Fichiers statiques
+    │   ├── style.css
+    │   └── scripts.js
+    │
+    ├── data/                       # (Optionnel) dumps JSON/CSV des relevés
+    └── README.md
 
 ------------------------------------------------------------------------
 
-## ⚙️ Installation et lancement
+## ⚙️ Installation et exécution
 
 ### 1. Cloner le projet
 
@@ -72,63 +63,70 @@ git clone https://github.com/LilRaphh/CloudDataM2.git
 cd CloudDataM2
 ```
 
-### 2. Lancer l'environnement Docker
+### 2. Lancer avec Docker
 
 ``` bash
 docker compose up -d
 ```
 
-### 3. Vérifier les services
+### 3. Accéder à l'application
 
--   NiFi : <http://localhost:8080>
--   PGAdmin : <http://localhost:5050>
--   API FastAPI : <http://localhost:8000/docs>
--   Streamlit : <http://localhost:8501>
+-   Interface : <http://localhost:5000>
+-   Mongo Express (si configuré) : <http://localhost:8081>
 
 ------------------------------------------------------------------------
 
-## 🧠 Données manipulées
+## 🧾 Fonctionnalités principales
 
-Le pipeline traite plusieurs sources : - **OpenSky API** → données
-aéronautiques temps réel\
-- **ORS API** → calculs d'itinéraires\
-- **Sources CSV / Parquet locales** → données historiques
+✅ **Carte interactive** :\
+Affiche les stations Vélib' avec statut (vélos disponibles, bornes
+libres, etc.).
 
-------------------------------------------------------------------------
+✅ **Overlay ZFE** :\
+Superposition dynamique des zones à faibles émissions de Paris.
 
-## 🧮 Fonctions principales
+✅ **Historisation MongoDB** :\
+Les relevés sont enregistrés sans écrasement, avec horodatage
+automatique.
 
--   **Ingestion automatisée** via NiFi et Kafka\
--   **Nettoyage et enrichissement** des données\
--   **Stockage** dans PostgreSQL et Cassandra\
--   **Traitement distribué** avec Spark\
--   **Exposition API** (FastAPI)\
--   **Visualisation** via Streamlit
+✅ **Filtrage et mises à jour** :\
+Actualisation manuelle ou automatique des données via le script Python.
 
 ------------------------------------------------------------------------
 
-## 🧰 Technologies principales
+## 🧩 Exemple de logique d'historisation
 
-  Catégorie          Outils
-  ------------------ ----------------------------
+Chaque exécution du script insère les nouveaux relevés :
+
+``` python
+existing = collection.find_one({"station_id": station_id})
+if not existing or existing["last_update"] != new_data["last_update"]:
+    collection.insert_one(new_data)
+```
+
+Ainsi, les anciennes valeurs sont conservées pour analyses temporelles.
+
+------------------------------------------------------------------------
+
+## 🧰 Technologies utilisées
+
+  Type               Outils
+  ------------------ ----------------------------------
+  Backend            Flask, Requests
+  Base de données    MongoDB
+  Frontend           HTML5, CSS3, JavaScript, Leaflet
   Conteneurisation   Docker, Docker Compose
-  ETL / Ingestion    Apache NiFi
-  Messaging          Kafka
-  Traitement         Spark, PySpark
-  Stockage           PostgreSQL, Cassandra
-  API                FastAPI
-  Visualisation      Streamlit
-  CI/CD              GitHub Actions (optionnel)
+  Données            OpenData Paris -- Vélib', ZFE
 
 ------------------------------------------------------------------------
 
-## 👥 Auteurs
+## 🧑‍💻 Auteur
 
 **Raphaël COLNOT**\
-*M2 Big Data & Intelligence Artificielle -- 2025*
+*M2 Big Data & Intelligence Artificielle -- Projet CloudDataM2*
 
 ------------------------------------------------------------------------
 
 ## 📄 Licence
 
-Ce projet est distribué sous licence MIT.
+Projet libre sous licence MIT.
