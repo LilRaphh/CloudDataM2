@@ -5,6 +5,7 @@
 
 <form method="get" action="/stations" style="margin-bottom:15px;">
     <input type="text" name="q" placeholder="Rechercher une station..." value="{{ query }}">
+    
     <label for="arr">Arrondissement :</label>
     <select name="arr" id="arr" onchange="this.form.submit()">
         <option value="Tous">Tous</option>
@@ -19,6 +20,7 @@
             <option value="{{ opt }}" {% if opt == limit %}selected{% endif %}>{{ opt }}</option>
         {% endfor %}
     </select>
+
     <button type="submit">Rechercher</button>
 </form>
 
@@ -31,7 +33,7 @@
             <th>Bornes dispo</th>
             <th>Mécaniques</th>
             <th>Électriques</th>
-            <th>État</th>
+            <th>Installée</th>
         </tr>
     </thead>
     <tbody>
@@ -43,7 +45,13 @@
             <td>{{ r.numdocksavailable }}</td>
             <td>{{ r.mechanical }}</td>
             <td>{{ r.ebike }}</td>
-            <td>{{ r.station_state }}</td>
+            <td>
+                {% if r.is_installed %}
+                    Oui
+                {% else %}
+                    Non
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>

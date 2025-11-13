@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 from pymongo import MongoClient
-
+import math
 
 app = Flask(__name__)
 
@@ -22,7 +22,7 @@ def stations():
     filters = {}
     if query:
         filters["name"] = {"$regex": query, "$options": "i"}
-    if arrondissement and arrondissement != "Tous":
+    if arrondissement and arrondissement != "Tous": 
         filters["nom_arrondissement_communes"] = arrondissement
 
     data = list(collection.find(filters, {"_id": 0}).limit(limit))
@@ -105,6 +105,67 @@ def zfe_view():
 
     return render_template("zfe.html", records=zfe_docs)
 
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = (math.sin(dlat / 2)**2 +
+         math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
+         math.sin(dlon / 2)**2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+@app.route("/nearest_station")
+def nearest_station():
+    user_lat = float(request.args.get("lat"))
+    user_lon = float(request.args.get("lon"))
+
+    # Récupération depuis TA collection MongoDB
+    stations = list(collection.find({}, {"_id": 0}))
+
+    # Fonction pour extraire les coordonnées comme dans map.html
+    def extract_coords(station):
+        c = station.get("coordonnees_geo")
+        if not c:
+            return None
+        if isinstance(c, list) and len(c) == 2:
+            return float(c[0]), float(c[1])
+        if isinstance(c, dict):
+            if "lat" in c and "lon" in c:
+                return float(c["lat"]), float(c["lon"])
+            if "latitude" in c and "longitude" in c:
+                return float(c["latitude"]), float(c["longitude"])
+        return None
+
+    nearest = None
+    min_dist = float("inf")
+
+    for s in stations:
+        coords = extract_coords(s)
+        if not coords:
+            continue
+
+        slat, slon = coords
+        dist = haversine(user_lat, user_lon, slat, slon)
+
+        if dist < min_dist:
+            min_dist = dist
+            nearest = (s, slat, slon)
+
+    if nearest is None:
+        return jsonify({"error": "No valid station coordinates found"}), 500
+
+    s, slat, slon = nearest
+
+    return jsonify({
+        "name": s.get("name"),
+        "lat": slat,
+        "lon": slon,
+        "numbikes": s.get("numbikesavailable"),
+        "numdocks": s.get("numdocksavailable"),
+        "arrondissement": s.get("nom_arrondissement_communes"),
+        "distance_km": round(min_dist, 3)
+    })
 
 
 if __name__ == '__main__':
