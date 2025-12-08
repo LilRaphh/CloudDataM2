@@ -16,7 +16,7 @@ all_records = []
 
 while True:
     url = f"{BASE_URL}?limit={limit}&offset={offset}"
-    response = requests.get(url)
+    response = requests.get(url, timeout=15)
 
     if response.status_code != 200:
         print(f"Erreur API {response.status_code}")

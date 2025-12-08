@@ -68,22 +68,33 @@ def get_zfe():
     features = []
 
     for doc in zfe_docs:
-        geo = doc.get("geo_shape", {}).get("geometry")
-        if geo:
-            feature = {
-                "type": "Feature",
-                "geometry": geo,
-                "properties": {
-                    "id": doc.get("id"),
-                    "vp_critair": doc.get("vp_critair"),
-                    "vul_critair": doc.get("vul_critair"),
-                    "vp_horaires": doc.get("vp_horaires"),
-                    "url_site_information": doc.get("url_site_information"),
-                },
-            }
-            features.append(feature)
+        geo = doc.get("geo_shape")
+        if not geo:
+            continue
+
+        # Deux cas possibles selon la structure renvoyée par l'API Paris :
+        # 1) geo_shape = { "type": "Feature", "geometry": {...} }
+        # 2) geo_shape = { "type": "Polygon" / "MultiPolygon", "coordinates": [...] }
+        if isinstance(geo, dict) and geo.get("type") == "Feature" and "geometry" in geo:
+            geometry = geo["geometry"]
+        else:
+            geometry = geo  # on considère que c'est déjà une geometry valide
+
+        feature = {
+            "type": "Feature",
+            "geometry": geometry,
+            "properties": {
+                "id": doc.get("id"),
+                "vp_critair": doc.get("vp_critair"),
+                "vul_critair": doc.get("vul_critair"),
+                "vp_horaires": doc.get("vp_horaires"),
+                "url_site_information": doc.get("url_site_information"),
+            },
+        }
+        features.append(feature)
 
     return jsonify({"type": "FeatureCollection", "features": features})
+
 
 @app.route('/zfe')
 def zfe_view():

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Monde à l'envers - Stranger Graph{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="upside-down-bg"></div>
+
+    <header class="main-header">
+        <div class="logo-title">
+            <span class="logo-text">STRANGER</span>
+            <span class="logo-text inverted">GRAPH</span>
+        </div>
+        <nav class="main-nav">
+            <a href="{{ url_for('index') }}">Accueil</a>
+            <a href="{{ url_for('characters') }}">Personnages</a>
+            <a href="{{ url_for('graph_page') }}">Graphe</a>
+        </nav>
+    </header>
+
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="main-footer">
+        <span>Projet Neo4j x Flask · Monde à l'envers</span>
+    </footer>
+</body>
+</html>

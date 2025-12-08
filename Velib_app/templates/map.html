@@ -3,7 +3,6 @@
 {% block content %}
 <h1 class="page-title">Carte des stations Vélib'</h1>
 
-<!-- Sélecteur du nombre et de l’arrondissement -->
 <form method="get" action="/map" style="margin-bottom:10px;">
     <label for="limit">Afficher :</label>
     <select name="limit" id="limit">
@@ -36,10 +35,8 @@
         <input id="search" type="text" placeholder="Rechercher une station..." />
         <p id="station-count"><strong>Stations affichées :</strong> 0</p>
 
-        <!-- BOUTON TRI -->
         <button id="sort-distance" style="margin-bottom:10px;">Trier par proximité</button>
 
-        <!-- 🔥 LISTE DES STATIONS (manquante avant) -->
         <ul id="results"></ul>
 
         <div id="summary">
@@ -53,29 +50,36 @@
     <div id="map"></div>
 </div>
 
-<!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<!-- Leaflet Routing Machine -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
-<!-- Données Flask -->
 <script id="stations-data" type="application/json">
     {{ records | tojson }}
 </script>
 
 <script>
-/*-------------------------------------------------------------------
-    VARIABLES GLOBALES
--------------------------------------------------------------------*/
 let USER_POSITION = null;
 let currentRoute = null;
+let zfeLayer = null;
 
-/*-------------------------------------------------------------------
-    1) INIT MAP + MARKERS
--------------------------------------------------------------------*/
+// Couleur en fonction du nombre de vélos dispo
+function getBikeColor(nbBikes) {
+    if (nbBikes === 0) return "#d73027";
+    if (nbBikes <= 5) return "#fc8d59";
+    if (nbBikes <= 10) return "#fee08b";
+    return "#1a9850";
+}
+
+// Rayon du cercle en fonction du nombre de vélos
+function getBikeRadius(nbBikes) {
+    if (nbBikes === 0) return 4;
+    if (nbBikes <= 5) return 6;
+    if (nbBikes <= 10) return 8;
+    return 10;
+}
 
 const stations = JSON.parse(document.getElementById("stations-data").textContent);
 
@@ -99,7 +103,18 @@ stations.forEach(s => {
     const coords = getCoords(s);
     if (!coords) return;
 
-    const marker = L.marker(coords).addTo(map);
+    const nbBikes = Number(s.numbikesavailable) || 0;
+    const color = getBikeColor(nbBikes);
+    const radius = getBikeRadius(nbBikes);
+
+    const marker = L.circleMarker(coords, {
+        radius: radius,
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.9,
+        weight: 1
+    }).addTo(map);
+
     marker.bindPopup(`
         <b>${s.name || "Station"}</b><br>
         🚲 Vélos : ${s.numbikesavailable ?? "?"}<br>
@@ -110,9 +125,6 @@ stations.forEach(s => {
     markers.push({ station: s, marker });
 });
 
-/*-------------------------------------------------------------------
-    2) HAVERSINE (distance)
--------------------------------------------------------------------*/
 function haversine(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dlat = (lat2 - lat1) * Math.PI / 180;
@@ -126,10 +138,6 @@ function haversine(lat1, lon1, lat2, lon2) {
 
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
-
-/*-------------------------------------------------------------------
-    3) RECHERCHE + AFFICHAGE DES STATIONS
--------------------------------------------------------------------*/
 
 const resultsList = document.getElementById("results");
 const searchInput = document.getElementById("search");
@@ -181,10 +189,6 @@ searchInput.addEventListener("input", () => {
 
 updateResults(stations);
 
-/*-------------------------------------------------------------------
-    4) TRI PAR PROXIMITÉ
--------------------------------------------------------------------*/
-
 document.getElementById("sort-distance").addEventListener("click", () => {
     if (!USER_POSITION) return alert("Position utilisateur inconnue.");
 
@@ -198,10 +202,6 @@ document.getElementById("sort-distance").addEventListener("click", () => {
 
     updateResults(sorted);
 });
-
-/*-------------------------------------------------------------------
-    5) TRAÇAGE D’ITINÉRAIRE
--------------------------------------------------------------------*/
 
 function drawRouteTo(lat, lon) {
     if (!USER_POSITION) return;
@@ -225,11 +225,7 @@ function drawRouteTo(lat, lon) {
     }).addTo(map);
 }
 
-/*-------------------------------------------------------------------
-    6) LOCALISATION UTILISATEUR
--------------------------------------------------------------------*/
-
-async function locateUserAndRoute() {
+function locateUserAndRoute() {
     if (!navigator.geolocation) return;
 
     navigator.geolocation.getCurrentPosition(async pos => {
@@ -253,7 +249,49 @@ async function locateUserAndRoute() {
     });
 }
 
-document.addEventListener("DOMContentLoaded", locateUserAndRoute);
+function loadZFE() {
+    fetch("/zfe_geojson")
+        .then(res => {
+            if (!res.ok) {
+                console.error("Erreur chargement ZFE:", res.status);
+                return null;
+            }
+            return res.json();
+        })
+        .then(data => {
+            if (!data) return;
+
+            zfeLayer = L.geoJSON(data, {
+                style: {
+                    color: "#800026",
+                    weight: 2,
+                    fillOpacity: 0.05
+                }
+            });
+
+            const toggleZfe = document.getElementById("toggle-zfe");
+            toggleZfe.disabled = false;
+
+            toggleZfe.addEventListener("change", (e) => {
+                if (e.target.checked) {
+                    zfeLayer.addTo(map);
+                    try {
+                        map.fitBounds(zfeLayer.getBounds());
+                    } catch (err) {
+                        console.warn("fitBounds ZFE impossible:", err);
+                    }
+                } else {
+                    map.removeLayer(zfeLayer);
+                }
+            });
+        })
+        .catch(err => console.error("Exception chargement ZFE:", err));
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    locateUserAndRoute();
+    loadZFE();
+});
 </script>
 
 {% endblock %}

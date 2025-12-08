@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil - Stranger Graph{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-text">
+        <h1>Bienvenue dans le Monde à l'envers</h1>
+        <p>
+            Explore le réseau des personnages de Stranger Things  
+            à travers un graphe Neo4j plongé dans l'ambiance de l'Upside Down.
+        </p>
+        <div class="hero-stats">
+            <div class="stat-card">
+                <span class="stat-label">Personnages</span>
+                <span class="stat-value">{{ nodes_count }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Relations</span>
+                <span class="stat-value">{{ rels_count }}</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section-block">
+    <h2>Habitants de Hawkins</h2>
+    <p>
+        Recherche un personnage et filtre par catégorie, type ou statut pour naviguer dans le casting
+        avant de plonger dans le graphe.
+    </p>
+
+    <!-- Filtres et recherche -->
+    <div class="character-filters">
+        <div class="filter-row">
+            <div class="filter-col">
+                <label for="char-search" class="filter-label">Recherche</label>
+                <input
+                    type="text"
+                    id="char-search"
+                    class="filter-input"
+                    placeholder="Rechercher par nom (Eleven, Hopper, Vecna...)">
+            </div>
+
+            <div class="filter-col">
+                <span class="filter-label">Catégorie</span>
+                <div class="filter-chips">
+                    <label><input type="checkbox" class="char-filter-category" value="Kid" checked> Kid</label>
+                    <label><input type="checkbox" class="char-filter-category" value="Teen" checked> Teen</label>
+                    <label><input type="checkbox" class="char-filter-category" value="Adult" checked> Adult</label>
+                    <label><input type="checkbox" class="char-filter-category" value="Experiment" checked> Expérimenté</label>
+                    <label><input type="checkbox" class="char-filter-category" value="Entity" checked> Entité</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-row">
+            <div class="filter-col">
+                <span class="filter-label">Statut</span>
+                <div class="filter-chips">
+                    <label><input type="checkbox" class="char-filter-status" value="Alive" checked> Alive</label>
+                    <label><input type="checkbox" class="char-filter-status" value="Dead" checked> Dead</label>
+                    <label><input type="checkbox" class="char-filter-status" value="Active" checked> Active</label>
+                </div>
+            </div>
+
+            <div class="filter-col">
+                <span class="filter-label">Rôle</span>
+                <div class="filter-chips">
+                    <label><input type="radio" name="char-filter-main" value="all" checked> Tous</label>
+                    <label><input type="radio" name="char-filter-main" value="main"> Principaux</label>
+                    <label><input type="radio" name="char-filter-main" value="side"> Récurrents</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cartes personnages -->
+    <div class="cards-grid" id="characters-grid">
+        {% for c in characters %}
+        <article
+            class="character-card"
+            data-name="{{ c.name | lower }}"
+            data-category="{{ c.category }}"
+            data-type="{{ c.type }}"
+            data-status="{{ c.status }}"
+            data-main="{{ 'main' if c.is_main else 'side' }}"
+        >
+            <h3>{{ c.name }}</h3>
+            <p class="char-meta">
+                {{ c.category }} · {{ c.type }}<br>
+                Statut : <span class="status {{ c.status | lower }}">{{ c.status }}</span><br>
+                Saison d'introduction : {{ c.introduced_season }}
+            </p>
+            {% if c.is_main %}
+            <span class="tag tag-main">Personnage principal</span>
+            {% else %}
+            <span class="tag tag-side">Récurrent</span>
+            {% endif %}
+        </article>
+        {% endfor %}
+    </div>
+
+    <p id="characters-empty-message" class="empty-message" style="display:none;">
+        Aucun personnage ne correspond à ces filtres.
+    </p>
+</section>
+
+<section class="section-block">
+    <h2>Explorer le graphe</h2>
+    <p>
+        Tu peux visualiser toutes les relations dans une vue graphe interactive :
+        alliances, amitiés, familles, ennemis, alter ego, et plus encore.
+    </p>
+    <a class="btn-primary" href="{{ url_for('graph_page') }}">Voir le graphe</a>
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById("char-search");
+    const cards = Array.from(document.querySelectorAll("#characters-grid .character-card"));
+    const categoryBoxes = Array.from(document.querySelectorAll(".char-filter-category"));
+    const statusBoxes = Array.from(document.querySelectorAll(".char-filter-status"));
+    const mainRadios = Array.from(document.querySelectorAll("input[name='char-filter-main']"));
+    const emptyMessage = document.getElementById("characters-empty-message");
+
+    function getActiveCategories() {
+        return categoryBoxes.filter(cb => cb.checked).map(cb => cb.value);
+    }
+
+    function getActiveStatuses() {
+        return statusBoxes.filter(cb => cb.checked).map(cb => cb.value);
+    }
+
+    function getMainFilter() {
+        const selected = mainRadios.find(r => r.checked);
+        return selected ? selected.value : "all";
+    }
+
+    function applyFilters() {
+        const search = searchInput.value.trim().toLowerCase();
+        const activeCats = new Set(getActiveCategories());
+        const activeStatuses = new Set(getActiveStatuses());
+        const mainFilter = getMainFilter();
+
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const name = card.dataset.name || "";
+            const cat = card.dataset.category || "";
+            const status = card.dataset.status || "";
+            const main = card.dataset.main || "side";
+
+            let visible = true;
+
+            // Recherche texte
+            if (search && !name.includes(search)) {
+                visible = false;
+            }
+
+            // Catégorie
+            if (!activeCats.has(cat)) {
+                visible = false;
+            }
+
+            // Statut
+            if (!activeStatuses.has(status)) {
+                visible = false;
+            }
+
+            // Rôle
+            if (mainFilter === "main" && main !== "main") {
+                visible = false;
+            } else if (mainFilter === "side" && main !== "side") {
+                visible = false;
+            }
+
+            card.style.display = visible ? "" : "none";
+            if (visible) visibleCount += 1;
+        });
+
+        emptyMessage.style.display = visibleCount === 0 ? "" : "none";
+    }
+
+    searchInput.addEventListener("input", applyFilters);
+    categoryBoxes.forEach(cb => cb.addEventListener("change", applyFilters));
+    statusBoxes.forEach(cb => cb.addEventListener("change", applyFilters));
+    mainRadios.forEach(r => r.addEventListener("change", applyFilters));
+
+    // Premier filtrage (au cas où)
+    applyFilters();
+});
+</script>
+{% endblock %}

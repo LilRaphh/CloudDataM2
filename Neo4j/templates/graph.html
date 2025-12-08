@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}Graphe - Monde à l'envers{% endblock %}
+
+{% block extra_head %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<section class="section-block">
+    <h1>Graphe des relations</h1>
+    <p>
+        Visualisation du réseau de personnages : survole un nœud pour voir le nom,  
+        filtre par catégorie ou type de relation pour explorer Hawkins côté Monde à l'envers.
+    </p>
+
+    <!-- Panneau de filtres -->
+    <div class="graph-filters">
+        <div class="filter-group">
+            <span class="filter-title">Catégories</span>
+            <label><input type="checkbox" class="filter-category" value="Kid" checked> Kid</label>
+            <label><input type="checkbox" class="filter-category" value="Teen" checked> Teen</label>
+            <label><input type="checkbox" class="filter-category" value="Adult" checked> Adult</label>
+            <label><input type="checkbox" class="filter-category" value="Experiment" checked> Expérimenté</label>
+            <label><input type="checkbox" class="filter-category" value="Entity" checked> Entité</label>
+        </div>
+
+        <div class="filter-group">
+            <span class="filter-title">Types de relation</span>
+            <label><input type="checkbox" class="filter-reltype" value="FRIEND_OF" checked> Friend</label>
+            <label><input type="checkbox" class="filter-reltype" value="FAMILY" checked> Family</label>
+            <label><input type="checkbox" class="filter-reltype" value="ROMANTIC" checked> Romantic</label>
+            <label><input type="checkbox" class="filter-reltype" value="ALLY_OF" checked> Ally</label>
+            <label><input type="checkbox" class="filter-reltype" value="ENEMY_OF" checked> Enemy</label>
+            <label><input type="checkbox" class="filter-reltype" value="WORKS_WITH" checked> Works with</label>
+            <label><input type="checkbox" class="filter-reltype" value="ALTER_EGO_OF" checked> Alter ego</label>
+        </div>
+    </div>
+
+    <!-- Légende -->
+    <div class="graph-legend">
+        <div class="legend-block">
+            <div class="legend-title">Couleurs des nœuds (catégories)</div>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <span class="legend-swatch" style="background:#4dd0e1;"></span>
+                    <span>Kid</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch" style="background:#ffb74d;"></span>
+                    <span>Teen</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch" style="background:#ba68c8;"></span>
+                    <span>Adult</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch" style="background:#ff8a65;"></span>
+                    <span>Experiment</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch" style="background:#ef5350;"></span>
+                    <span>Entity</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend-block">
+            <div class="legend-title">Couleurs des liens (relations)</div>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <span class="legend-swatch" style="background:#64b5f6;"></span>
+                    <span>FRIEND_OF</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch" style="background:#81c784;"></span>
+                    <span>FAMILY</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch" style="background:#f06292;"></span>
+                    <span>ROMANTIC</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch" style="background:#4db6ac;"></span>
+                    <span>ALLY_OF</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch" style="background:#e57373;"></span>
+                    <span>ENEMY_OF</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch" style="background:#fff176;"></span>
+                    <span>WORKS_WITH</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch" style="background:#ce93d8;"></span>
+                    <span>ALTER_EGO_OF</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="graph-container">
+        <svg id="graph-svg"></svg>
+    </div>
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    let rawGraph = null;
+
+    fetch("{{ url_for('graph_api') }}")
+        .then(response => response.json())
+        .then(data => {
+            rawGraph = data;
+            renderFilteredGraph();
+            setupFilters();
+        });
+
+    function setupFilters() {
+        const catCheckboxes = document.querySelectorAll(".filter-category");
+        const typeCheckboxes = document.querySelectorAll(".filter-reltype");
+
+        catCheckboxes.forEach(cb => cb.addEventListener("change", renderFilteredGraph));
+        typeCheckboxes.forEach(cb => cb.addEventListener("change", renderFilteredGraph));
+    }
+
+    function getActiveCategories() {
+        return Array.from(document.querySelectorAll(".filter-category:checked"))
+            .map(cb => cb.value);
+    }
+
+    function getActiveRelTypes() {
+        return Array.from(document.querySelectorAll(".filter-reltype:checked"))
+            .map(cb => cb.value);
+    }
+
+    function renderFilteredGraph() {
+        if (!rawGraph) return;
+
+        const activeCats = getActiveCategories();
+        const activeTypes = getActiveRelTypes();
+
+        const filteredNodes = rawGraph.nodes.filter(n =>
+            activeCats.includes(n.category)
+        );
+
+        const nodeIdSet = new Set(filteredNodes.map(n => n.id));
+
+        const filteredLinks = rawGraph.links.filter(l =>
+            activeTypes.includes(l.type) &&
+            nodeIdSet.has(l.source) &&
+            nodeIdSet.has(l.target)
+        );
+
+        drawGraph(filteredNodes, filteredLinks);
+    }
+
+    function drawGraph(nodesData, linksData) {
+        const container = document.getElementById("graph-container");
+        const width = container.clientWidth;
+        const height = 600;
+
+        const svg = d3.select("#graph-svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        svg.selectAll("*").remove();
+
+        const colorByCategory = d3.scaleOrdinal()
+            .domain(["Kid", "Teen", "Adult", "Experiment", "Entity"])
+            .range(["#4dd0e1", "#ffb74d", "#ba68c8", "#ff8a65", "#ef5350"]);
+
+        const linkColorByType = d3.scaleOrdinal()
+            .domain([
+                "FRIEND_OF",
+                "FAMILY",
+                "ROMANTIC",
+                "ALLY_OF",
+                "ENEMY_OF",
+                "WORKS_WITH",
+                "ALTER_EGO_OF"
+            ])
+            .range([
+                "#64b5f6",  // Friend
+                "#81c784",  // Family
+                "#f06292",  // Romantic
+                "#4db6ac",  // Ally
+                "#e57373",  // Enemy
+                "#fff176",  // Works with
+                "#ce93d8"   // Alter ego
+            ]);
+
+        const nodeById = new Map(nodesData.map(n => [n.id, n]));
+
+        const links = linksData.map(l => ({
+            source: nodeById.get(l.source),
+            target: nodeById.get(l.target),
+            type: l.type
+        }));
+
+        const simulation = d3.forceSimulation(nodesData)
+            .force("link", d3.forceLink(links).distance(100).strength(0.8))
+            .force("charge", d3.forceManyBody().strength(-220))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collision", d3.forceCollide().radius(40));
+
+        const link = svg.append("g")
+            .attr("stroke-opacity", 0.6)
+            .selectAll("line")
+            .data(links)
+            .enter()
+            .append("line")
+            .attr("class", "link")
+            .attr("stroke-width", 1.5)
+            .attr("stroke", d => linkColorByType(d.type));
+
+        const node = svg.append("g")
+            .attr("stroke", "#111")
+            .attr("stroke-width", 1)
+            .selectAll("circle")
+            .data(nodesData)
+            .enter()
+            .append("circle")
+            .attr("r", 10)
+            .attr("fill", d => colorByCategory(d.category))
+            .call(drag(simulation));
+
+        const label = svg.append("g")
+            .selectAll("text")
+            .data(nodesData)
+            .enter()
+            .append("text")
+            .attr("class", "node-label")
+            .attr("dy", -15)
+            .text(d => d.name);
+
+        node.append("title")
+            .text(d => `${d.name}\n${d.category} · ${d.type}\nStatut : ${d.status}`);
+
+        simulation.on("tick", () => {
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            node
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y);
+
+            label
+                .attr("x", d => d.x)
+                .attr("y", d => d.y);
+        });
+
+        function drag(sim) {
+            function dragstarted(event, d) {
+                if (!event.active) sim.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+            function dragended(event, d) {
+                if (!event.active) sim.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+            return d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended);
+        }
+    }
+});
+</script>
+{% endblock %}
