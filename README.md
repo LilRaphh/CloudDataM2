@@ -7,6 +7,16 @@ Projet intégrant **deux applications web** développées dans le cadre du M2 Bi
 Les deux applications sont conteneurisées via **Docker Compose**, partagent une organisation commune et sont hébergées dans ce même dépôt.
 
 ---
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-Web_App-000000?style=for-the-badge&logo=flask&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Database-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
+![Mongo_Express](https://img.shields.io/badge/MongoExpress-Admin_UI-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Leaflet](https://img.shields.io/badge/Leaflet-Maps-199900?style=for-the-badge&logo=leaflet&logoColor=white)
+![OpenData_Paris](https://img.shields.io/badge/OpenData-Paris_API-0055A4?style=for-the-badge)
+![ZFE](https://img.shields.io/badge/ZFE-Layers-FF8800?style=for-the-badge)
+![App](https://img.shields.io/badge/Application-Live-red?style=for-the-badge)
+
 
 # 📦 Contenu du dépôt
 
