@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Indicateurs Grafana{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Indicateurs et tableaux de bord Grafana</h1>
+
+<p class="page-intro">
+    Cette page expose une vue analytique des données Vélib' grâce à Grafana.
+    Elle complète les pages Carte, Stations et Historique en offrant des
+    indicateurs graphiques et des séries temporelles détaillées.
+</p>
+
+<section class="section-block">
+    <h2>Tableau de bord principal</h2>
+    <p>
+        Le tableau de bord ci-dessous est directement rendu depuis Grafana.
+        Utilise les filtres (station, arrondissement, type de vélo, période)
+        pour explorer les données selon tes besoins.
+    </p>
+
+    <div class="grafana-iframe-wrapper">
+        <iframe
+            src="http://localhost:3000/d/velib-dashboard/main?orgId=1&refresh=5s"
+            width="100%"
+            height="900"
+            frameborder="0"
+        ></iframe>
+    </div>
+</section>
+
+<section class="section-block">
+    <h2>Principaux indicateurs disponibles</h2>
+    <div class="cards-grid">
+        <article class="info-card">
+            <h3>Disponibilité en temps réel</h3>
+            <ul>
+                <li>Nombre de vélos mécaniques et électriques disponibles</li>
+                <li>Taux d’occupation moyen par arrondissement</li>
+                <li>Stations les plus vides et les plus saturées</li>
+            </ul>
+        </article>
+
+        <article class="info-card">
+            <h3>Évolution temporelle</h3>
+            <ul>
+                <li>Séries temporelles par station</li>
+                <li>Heatmaps horaires et journalières</li>
+                <li>Détection visuelle des anomalies et ruptures</li>
+            </ul>
+        </article>
+
+        <article class="info-card">
+            <h3>Performance du système</h3>
+            <ul>
+                <li>Temps moyen avant réapprovisionnement d’une station</li>
+                <li>Nombre de stations en saturation sur une période</li>
+                <li>Ratio vélos électriques / mécaniques</li>
+            </ul>
+        </article>
+    </div>
+</section>
+
+<section class="section-block">
+    <h2>Utilisation et export des données</h2>
+    <p>
+        Depuis chaque panneau Grafana, les utilisateurs peuvent :
+    </p>
+    <ul>
+        <li>Exporter les données sous forme de fichier CSV</li>
+        <li>Télécharger un graphique en image (PNG)</li>
+        <li>Récupérer la série temporelle au format JSON</li>
+    </ul>
+    <p>
+        Ces exports permettent de réaliser des analyses complémentaires dans
+        des outils externes (Excel, Python, R, etc.).
+    </p>
+</section>
+
+
+{% endblock %}

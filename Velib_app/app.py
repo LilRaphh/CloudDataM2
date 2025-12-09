@@ -178,6 +178,11 @@ def nearest_station():
         "distance_km": round(min_dist, 3)
     })
 
+@app.route('/grafana')
+def grafana():
+    return render_template('grafana.html')
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

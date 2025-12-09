@@ -1,24 +1,29 @@
 {% extends "base.html" %}
-{% block title %}Accueil - Vélib Data{% endblock %}
+
+{% block title %}Accueil – Vélib Data{% endblock %}
+
 {% block content %}
 <div class="home-container">
     <div class="home-card">
+
         <h1>🚲 Vélib Data Dashboard</h1>
+
         <p class="subtitle">
             Visualisez et explorez les données de disponibilité des stations Vélib’ en temps réel.
         </p>
 
         <div class="home-buttons">
-            <a href="/map" class="home-btn primary">🗺️ Carte interactive</a>
-            <a href="/stations" class="home-btn secondary">📋 Liste des stations</a>
+            <a href="/map" class="home-btn primary">📘 Carte interactive</a>
+            <a href="/stations" class="home-btn secondary">📄 Liste des stations</a>
             <a href="/zfe" class="home-btn secondary">🌍 Zones ZFE (Historique)</a>
+            <a href="/grafana" class="home-btn secondary">📊 Voir les indicateurs Grafana</a>
         </div>
 
-        <div class="home-footer">
-            <p>Mis à jour automatiquement à partir des données de 
-               <a href="https://opendata.paris.fr" target="_blank">opendata.paris.fr</a>.
-            </p>
-        </div>
+        <p class="home-footer">
+            Mis à jour automatiquement à partir des données de 
+            <a href="https://opendata.paris.fr" target="_blank">opendata.paris.fr</a>.
+        </p>
+
     </div>
 </div>
 {% endblock %}
