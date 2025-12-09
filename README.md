@@ -1,132 +1,228 @@
-# 🚲 Vélib Data -- CloudDataM2
+# 🚲💫 CloudDataM2 — Vélib' Analytics & Neo4j Stranger Graph
 
-Application web de visualisation et d'analyse des données **Vélib'** à
-Paris, avec intégration des **zones ZFE** et d'un **historique de
-relevés** stocké dans MongoDB.\
-Développé en **Flask** et conteneurisé avec **Docker Compose**.
+Projet intégrant **deux applications web** développées dans le cadre du M2 Big Data & IA :  
+1) **Vélib Data** : Visualisation, historisation et analyse temps réel des stations Vélib'.  
+2) **Stranger Graph (Neo4j)** : Exploration interactive du réseau de personnages de *Stranger Things* à partir d’une base de graphes.
 
-------------------------------------------------------------------------
+Les deux applications sont conteneurisées via **Docker Compose**, partagent une organisation commune et sont hébergées dans ce même dépôt.
 
-## 🌍 Objectif
+---
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-Web_App-000000?style=for-the-badge&logo=flask&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Database-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
+![Mongo_Express](https://img.shields.io/badge/MongoExpress-Admin_UI-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Leaflet](https://img.shields.io/badge/Leaflet-Maps-199900?style=for-the-badge&logo=leaflet&logoColor=white)
+![OpenData_Paris](https://img.shields.io/badge/OpenData-Paris_API-0055A4?style=for-the-badge)
+![ZFE](https://img.shields.io/badge/ZFE-Layers-FF8800?style=for-the-badge)
+![App](https://img.shields.io/badge/Application-Live-red?style=for-the-badge)
 
-L'application permet de : - Visualiser en temps réel les **stations
-Vélib'** sur une carte interactive. - Afficher les **zones à faibles
-émissions (ZFE)** en overlay. - Consulter les **données historiques**
-des stations grâce à MongoDB. - Mettre à jour et historiser les relevés
-sans écraser les précédents. - Fournir une base pour l'analyse de la
-mobilité urbaine.
 
-------------------------------------------------------------------------
+# 📦 Contenu du dépôt
 
-## 🧠 Stack technique
+```
+CloudDataM2/
+│
+├── velib_app/                       # Application Vélib'
+│   ├── app.py
+│   ├── templates/
+│   ├── static/
+│   ├── velib_to_mongo.py
+│   └── ...
+│
+├── neo4j_stranger_graph/            # Application Neo4j Stranger Things
+│   ├── app.py
+│   ├── templates/
+│   ├── static/
+│   ├── queries.cypher
+│   └── ...
+│
+├── docker-compose.yml               # Stack globale (Flask + MongoDB + Neo4j)
+├── requirements.txt
+└── README.md                        # Vous êtes ici
+```
 
-  Composant              Description
-  ---------------------- --------------------------------------------------------
-  **Flask**              Framework web Python servant l'API et les pages HTML
-  **MongoDB**            Base NoSQL pour stocker les relevés Vélib (historique)
-  **Leaflet.js**         Librairie JavaScript pour la carte interactive
-  **Docker Compose**     Orchestration du backend Flask + MongoDB
-  **HTML / CSS / JS**    Interface utilisateur et carte interactive
-  **Open Data Vélib'**   Source de données en temps réel
+---
 
-------------------------------------------------------------------------
+# 🎯 Objectifs des applications
 
-## 🗂️ Structure du projet
+## 1) 🚲 Vélib Data — Analyse & Historisation
+- Carte interactive des **stations Vélib'** en temps réel.  
+- Superposition des **zones ZFE**.  
+- **Historisation MongoDB** sans écrasement.  
+- Visualisation des données, filtrage, mise à jour.  
+- Base d’analyse pour la mobilité urbaine.
 
-    CloudDataM2/
-    │
-    ├── app.py                     # Point d’entrée Flask
-    ├── requirements.txt            # Dépendances Python
-    ├── docker-compose.yml          # Stack Flask + MongoDB
-    │
-    ├── templates/                  # Pages HTML (Jinja2)
-    │   ├── base.html
-    │   ├── index.html
-    │   ├── map.html
-    │   └── zfe.html
-    │
-    ├── static/                     # Fichiers statiques
-    │   ├── style.css
-    │   └── scripts.js
-    │
-    ├── data/                       # (Optionnel) dumps JSON/CSV des relevés
-    └── README.md
+## 2) 💫 Stranger Graph — Exploration Neo4j
+- Visualisation des **personnages de Stranger Things**.  
+- Navigation dans les **relations du graphe** (amitié, famille, interactions).  
+- Pages HTML stylisées "Upside Down".  
+- Statistiques des **nœuds et relations** en base.  
+- Exploration filtrée (type de relation, saison, etc. – si activé).
 
-------------------------------------------------------------------------
+---
 
-## ⚙️ Installation et exécution
+# 🧠 Stack technique globale
 
-### 1. Cloner le projet
+| Composant | Usage |
+|----------|--------|
+| **Flask** | Serveur web / API pour les deux apps |
+| **MongoDB** | Historique des relevés Vélib' |
+| **Neo4j** | Base graph orientée Stranger Things |
+| **Cypher** | Requêtes sur le graphe Neo4j |
+| **Leaflet.js** | Carte interactive Vélib' |
+| **Docker Compose** | Orchestration des services |
+| **HTML/CSS/JS + Jinja2** | Interfaces web |
 
-``` bash
+---
+
+# 🗂️ Structure détaillée des deux projets
+
+## 📁 Vélib'
+```
+velib_app/
+│
+├── app.py                     # Backend Flask
+├── templates/
+│   ├── base.html
+│   ├── index.html
+│   ├── map.html
+│   └── zfe.html
+├── static/
+│   ├── style.css
+│   └── scripts.js
+├── velib_to_mongo.py          # Script d’historisation MongoDB
+└── data/                      # Optionnel : dumps, exports
+```
+
+## 📁 Stranger Graph (Neo4j)
+```
+neo4j_stranger_graph/
+│
+├── app.py                     # Backend Flask + connexion Neo4j
+├── queries.cypher             # Requêtes centralisées
+├── templates/
+│   ├── base.html
+│   ├── index.html
+│   ├── characters.html
+│   └── relations.html
+├── static/
+│   ├── style.css
+│   ├── upside.css
+│   └── scripts.js
+```
+
+---
+
+# ⚙️ Installation & Lancement
+
+## 1) Cloner le dépôt
+
+```bash
 git clone https://github.com/LilRaphh/CloudDataM2.git
 cd CloudDataM2
 ```
 
-### 2. Lancer avec Docker
+## 2) Lancer avec Docker
 
-``` bash
+```bash
 docker compose up -d
 ```
 
-### 3. Accéder à l'application
+## 3) Accéder aux applications
 
--   Interface : <http://localhost:5000>
--   Mongo Express (si configuré) : <http://localhost:8081>
+| Service | URL |
+|--------|-----|
+| **Vélib App** | http://localhost:5000 |
+| **Stranger Graph / Neo4j App** | http://localhost:5001 |
+| **Neo4j Browser** | http://localhost:7474 |
+| **Mongo Express** (si activé) | http://localhost:8081 |
 
-------------------------------------------------------------------------
+---
 
-## 🧾 Fonctionnalités principales
+# 🚲 Fonctionnalités Vélib'
 
-✅ **Carte interactive** :\
-Affiche les stations Vélib' avec statut (vélos disponibles, bornes
-libres, etc.).
+### ✓ Carte interactive en temps réel
+Affichage des stations avec icônes dynamiques :
+- vélos mécaniques  
+- vélos électriques  
+- bornes disponibles  
 
-✅ **Overlay ZFE** :\
-Superposition dynamique des zones à faibles émissions de Paris.
+### ✓ Overlay des zones ZFE
+Chargées via Open Data Paris.
 
-✅ **Historisation MongoDB** :\
-Les relevés sont enregistrés sans écrasement, avec horodatage
-automatique.
+### ✓ Historisation MongoDB
+Chaque mise à jour insère un nouvel enregistrement **sans écrasement des anciens**.
 
-✅ **Filtrage et mises à jour** :\
-Actualisation manuelle ou automatique des données via le script Python.
-
-------------------------------------------------------------------------
-
-## 🧩 Exemple de logique d'historisation
-
-Chaque exécution du script insère les nouveaux relevés :
-
-``` python
+### Exemple
+```python
 existing = collection.find_one({"station_id": station_id})
 if not existing or existing["last_update"] != new_data["last_update"]:
     collection.insert_one(new_data)
 ```
 
-Ainsi, les anciennes valeurs sont conservées pour analyses temporelles.
+### ✓ Filtres, pagination, limite d’affichage, arrondissements
 
-------------------------------------------------------------------------
+---
 
-## 🧰 Technologies utilisées
+# 💫 Fonctionnalités Stranger Graph (Neo4j)
 
-  Type               Outils
-  ------------------ ----------------------------------
-  Backend            Flask, Requests
-  Base de données    MongoDB
-  Frontend           HTML5, CSS3, JavaScript, Leaflet
-  Conteneurisation   Docker, Docker Compose
-  Données            OpenData Paris -- Vélib', ZFE
+### ✓ Page d’accueil immersive "Upside Down"
+- compteur des personnages  
+- compteur des relations  
+- ambiance visuelle Stranger Things  
 
-------------------------------------------------------------------------
+### ✓ Liste des personnages
+- cartes stylisées  
+- rôle, saison, description  
+- lien vers détail des relations  
 
-## 🧑‍💻 Auteur
+### ✓ Exploration du graphe via Cypher
+```cypher
+MATCH (c:Character)-[r:RELATION]->(d:Character)
+RETURN c, r, d
+```
 
-**Raphaël COLNOT**\
-*M2 Big Data & Intelligence Artificielle -- Projet CloudDataM2*
+### ✓ Filtres possibles
+- type de relation  
+- saison  
+- personnage source  
 
-------------------------------------------------------------------------
+---
 
-## 📄 Licence
+# 📸 Captures d’écran (à compléter)
+### 📍 Vélib' Map  
+<img width="3405" height="1298" alt="image"
+src="https://github.com/user-attachments/assets/c7240279-bf90-4e97-8dbb-eaa452178df6" />
 
-Projet libre sous licence MIT.
+
+### 💀 Stranger Graph Home  
+<img width="1672" height="1120" alt="image" src="https://github.com/user-attachments/assets/b514e9d7-3a65-418e-ae6b-a0814768daa0" />
+
+
+---
+
+# 🧰 Technologies utilisées
+
+| Type | Outils |
+|------|--------|
+| Backend | Flask, Python, Requests |
+| Base NoSQL | MongoDB |
+| Base Graphe | Neo4j, Neo4j Driver |
+| Frontend | HTML5, CSS3, JavaScript |
+| Cartographie | Leaflet.js |
+| Conteneurisation | Docker, Docker Compose |
+| Données | OpenData Paris (Vélib', ZFE) & dataset Stranger Things |
+
+---
+
+# 👨‍💻 Auteur
+
+**Raphaël COLNOT**  
+*M2 Big Data & Intelligence Artificielle — CloudDataM2*
+
+---
+
+# 📄 Licence
+
+Projet publié sous **licence MIT**.
